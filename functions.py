@@ -1,5 +1,5 @@
 import socket
-import scapy
+import scapy.all as scapy
 import optparse
 import re
 import subprocess
@@ -31,8 +31,10 @@ def get_arguments():
     parser.add_option("-r", "--remoteHost", dest="rehost", help="Ver se está com serviços web", action="store_true", default=False)
     parser.add_option("-l", "--localhost", dest="localhost", help="Verificar localhost", action="store_true", default=False)
     parser.add_option("-i", "--infoSO", dest="sistop", help="Checar Sistema Operacional", action="store_true", default=False)
+    parser.add_option("-m", "--getMAC", dest="getmac", help="Pegar MAC. Inserir IP/RANGE")
+    parser.add_option("-u", "--scanUDP", dest="scanudp", help="Scan UDP das portas 0-65535", action="store_true", default=False)
     (options, args) = parser.parse_args()
-    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop:
+    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop and not options.getmac and not options.scanudp:
         print("[*] Utilize a flag -h ou --help para mais informações.")
     return options
 
@@ -123,6 +125,33 @@ def get_system_info():
         s.close()
 
 
+def scan_mac():
+    ip = options.getmac
+    arp_request = scapy.ARP(pdst=ip)
+    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_request_broadcast = broadcast/arp_request
+    answered_lists = scapy.srp(arp_request_broadcast,timeout=1,verbose=False)[0]
+    print("IP\t\t\tMAC ADDRESS")
+    for element in answered_lists:
+        print(element[1].psrc + "\t\t" + element[1].hwsrc)
+        print("---------------------------------------------------------------------")
+
+
+def udp_scan():
+    ip = options.host
+    try:
+        for porta in range(1,65535):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.connect((ip, int(porta)))
+                print('[*] Porta {} aberta/filtrada.'.format(porta))
+            except:
+                None
+            s.close()
+    except KeyboardInterrupt:
+        print("[*] Abortando tarefa.")
+
+
 options = get_arguments()
 
 
@@ -130,19 +159,27 @@ if __name__ == '__main__':
         ascii_banner = pyfiglet.figlet_format("NINE SCAN")
         print(ascii_banner)
         if options.scanhost and options.host:
-                scan_portas()
+            scan_portas()
         elif options.scanhost and not options.host:
-                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
 
         if options.rehost and options.host:
-                get_remote_machine_infor()
+            get_remote_machine_infor()
         elif options.rehost and not options.host:
-                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
 
         if options.localhost:
-                scan_localhost()
+            scan_localhost()
 
         if options.sistop and options.host:
-                get_system_info()
+            get_system_info()
         elif options.sistop and not options.host:
-                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+
+        if options.getmac:
+            scan_mac()
+
+        if options.scanudp and options.host:
+            udp_scan()
+        elif options.scanudp and not options.host:
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
