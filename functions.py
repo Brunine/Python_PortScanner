@@ -13,15 +13,10 @@ import optparse
 import re
 import subprocess
 import pyfiglet
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-
-def print_machine_info():
-    host_name = socket.gethostname()
-    ip_address = socket.gethostbyname(host_name)
-    print("O nome da máquina é: %s" % host_name)
-    print("O endereço IP é: %s" % ip_address)
-
-
+# Função para obter argumentos
 def get_arguments():
     parser = optparse.OptionParser()
     parser.add_option("-H", "--host", dest="host", help="Definir o IP ou DNS")
@@ -32,8 +27,9 @@ def get_arguments():
     parser.add_option("-m", "--getMAC", dest="getmac", help="Pegar MAC. Inserir IP/RANGE")
     parser.add_option("-u", "--scanUDP", dest="scanudp", help="Scan UDP das portas 0-65535", action="store_true", default=False)
     parser.add_option("-x", "--scanXMAS", dest="scanxmas", help="Scan XMAS das portas mais comuns", action="store_true",default=False)
+    parser.add_option("-S", "--scanST", dest="scanstealth", help="Stealth Scan das portas 0-65535", action="store_true", default=False)
     (options, args) = parser.parse_args()
-    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop and not options.getmac and not options.scanudp and not options.scanxmas:
+    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop and not options.getmac and not options.scanudp and not options.scanxmas and not options.scanstealth:
         print("[*] Utilize a flag -h ou --help para mais informações.")
     return options
 
@@ -87,7 +83,7 @@ def scan_localhost():
     except KeyboardInterrupt:
         print("[*] Tarefa abortada, encerrando atividades.")
 
-
+# Checar se Header está na lista de SO
 def system_check(banner2):
     linux_system_list = ["debian", "ubuntu", "linux"]
     windows_system_list = ["microsoft", "windows"]
@@ -103,7 +99,7 @@ def system_check(banner2):
         if os not in banner2:
             return "Nenhum Sistema Operacional foi encontrado."
 
-
+# Obter SO do IP através do Header
 def get_system_info():
     linux_system_list = ["debian", "ubuntu", "linux"]
     windows_system_list = ["microsoft", "windows"]
@@ -123,7 +119,7 @@ def get_system_info():
             print("[*] A porta %s não foi encontrada." % porta)
         s.close()
 
-
+# Obter MAC pelo IP/RANGE
 def scan_mac():
     ip = options.getmac
     arp_request = scapy.ARP(pdst=ip)
@@ -135,7 +131,7 @@ def scan_mac():
         print(element[1].psrc + "\t\t" + element[1].hwsrc)
         print("---------------------------------------------------------------------")
 
-
+# Scan UDP das portas 0-65535
 def udp_scan():
     ip = options.host
     try:
@@ -210,6 +206,25 @@ def xmas_scan():
         print("[*] HOST inalcançável.")
 # XMAS SCAN - FIM
 
+# Stealth Scan nas portas 0-65535 (lento)
+def stealth_scan():
+    dst_ip = options.host
+    src_port = RandShort()
+    print("[*] Começando Stealth Scan em %s" % dst_ip)
+    for portas in range(1, 65535):
+        conf.verb = 0
+        stealth_scan_resp = sr1(IP(dst=dst_ip) / TCP(sport=src_port, dport=portas, flags="S"), timeout=10)
+        if (str(type(stealth_scan_resp)) == "<type 'NoneType'>"):
+            print("[*] Porta %s filtrada." % portas)
+        elif (stealth_scan_resp.haslayer(TCP)):
+            if (stealth_scan_resp.getlayer(TCP).flags == 0x12):
+                send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=portas, flags="R"), timeout=10)
+                print("[*] Porta %s aberta." % portas)
+        elif (stealth_scan_resp.haslayer(ICMP)):
+            if (int(stealth_scan_resp.getlayer(ICMP).type) == 3 and int(stealth_scan_resp.getlayer(ICMP).code) in [1, 2, 3, 9, 10, 13]):
+                print("[*] Porta %s filtrada." % portas)
+
+
 
 options = get_arguments()
 
@@ -246,4 +261,9 @@ if __name__ == '__main__':
         if options.scanxmas and options.host:
             xmas_scan()
         elif options.scanxmas and not options.host:
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+
+        if options.scanstealth and options.host:
+            stealth_scan()
+        elif options.scanstealth and not options.host:
             print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
