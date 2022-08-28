@@ -9,7 +9,6 @@ def print_machine_info():
     print("O nome da máquina é: %s" % host_name)
     print("O endereço IP é: %s" % ip_address)
 
-#print_machine_info()
 
 """def get_arguments():
     parser = optparse.OptionParser()
@@ -22,12 +21,14 @@ def print_machine_info():
         parser.error("[-] Por favor especifique o novo mac, use --help para mais informações.")
     return options"""
 
+
 def get_arguments():
     parser = optparse.OptionParser()
     parser.add_option("-H", "--host", dest="host", help="Definir o IP")
     parser.add_option("-s", "--scanHost", dest="scanhost", help="Scannear portas 0-65535")
+    parser.add_option("-r", "--remoteHost", dest="rehost", help="Ver se está com serviços web")
     (options, arguments) = parser.parse_args()
-    if not options.scanhost and not options.host:
+    if not options.scanhost and not options.host and not options.rehost:
         print("[*] Utilize a flag -h ou --help para mais informações.")
     return options
 
@@ -40,7 +41,6 @@ def scan_portas():
         for port in range(1, 65535):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket.setdefaulttimeout(1)
-
             # returns an error indicator
             result = s.connect_ex((target, port))
             if result == 0:
@@ -50,8 +50,20 @@ def scan_portas():
         print("[*] Tarefa abortada, encerrando atividades.")
 
 
+# Scannear portas 80 e 443
+def get_remote_machine_infor():
+    portas = 80, 443
+    remote_host = options.rehost
+    print("O endereço IP remoto é: %s" % socket.gethostbyname(remote_host))
+    for porta in portas:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socket.setdefaulttimeout(1)
+        result = s.connect_ex((remote_host, porta))
+        if result == 0:
+            print("[*] Porta {} está aberta.".format(porta))
+        s.close()
 
 options = get_arguments()
 
-if options.host:
-    scan_portas()
+if options.rehost:
+    get_remote_machine_infor()

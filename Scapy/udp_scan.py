@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
-dst_ip = "192.168.15.2"
+dst_ip = "172.16.54.144"
 src_port = RandShort()
 dst_port=135
 dst_timeout=10
