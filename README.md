@@ -2,6 +2,7 @@
 Coding for Security - Checkpoint
 
 ================================================================
+
 COMMANDS:
 
   -h, --help            show this help message and exit
@@ -26,6 +27,7 @@ COMMANDS:
   -S, --scanST          Stealth Scan das portas 0-65535
   
 ===============================================================
+
 Necessitam da flag '-H' ou '--host':
 
   -s, --scanHost
