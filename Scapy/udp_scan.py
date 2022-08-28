@@ -4,9 +4,9 @@ import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
-dst_ip = "172.16.54.144"
+dst_ip = "127.0.0.1"
 src_port = RandShort()
-dst_port=135
+dst_port=9000
 dst_timeout=10
 
 def udp_scan(dst_ip,dst_port,dst_timeout):

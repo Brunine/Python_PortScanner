@@ -3,9 +3,9 @@ import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
-dst_ip = "192.168.15.2"
+dst_ip = "127.0.0.1"
 src_port = RandShort()
-dst_port=135
+dst_port=6942
 
 stealth_scan_resp = sr1(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="S"),timeout=10)
 if(str(type(stealth_scan_resp))=="<type 'NoneType'>"):

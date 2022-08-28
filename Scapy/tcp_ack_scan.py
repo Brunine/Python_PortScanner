@@ -2,9 +2,9 @@ import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
-dst_ip = "192.168.15.2"
+dst_ip = "127.0.0.1"
 src_port = RandShort()
-dst_port=5
+dst_port=6942
 
 ack_flag_scan_resp = sr1(IP(dst=dst_ip)/TCP(dport=dst_port,flags="A"),timeout=10)
 if (str(type(ack_flag_scan_resp))=="<type ‘NoneType’>"):
