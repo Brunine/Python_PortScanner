@@ -1,27 +1,25 @@
+#!/usr/bin/python3
+#----------------------------------------------------------------------------
+# Created By  : Bruno Imperador Kneblewski
+# Created Date: 26/08/2022
+# Version = Python 3.9
+# Description = CHECKPOINT - CODING FOR SECURITY
+# License = PyCharm 2022.2.1 (Community Edition)
+#----------------------------------------------------------------------------
 import socket
 import scapy.all as scapy
+from scapy.all import *
 import optparse
 import re
 import subprocess
 import pyfiglet
+
 
 def print_machine_info():
     host_name = socket.gethostname()
     ip_address = socket.gethostbyname(host_name)
     print("O nome da máquina é: %s" % host_name)
     print("O endereço IP é: %s" % ip_address)
-
-
-"""def get_arguments():
-    parser = optparse.OptionParser()
-    parser.add_option("-i", "--interface", dest="interface", help="Alterando o MAC Address da Interface")
-    parser.add_option("-m", "--mac", dest="new_mac", help="Insira o Novo MAC Address para a Interface.")
-    (options , arguments) = parser.parse_args()
-    if not options.interface:
-        parser.error("[-] Por favor especifique a interface, use --help para mais informações.")
-    if not options.new_mac:
-        parser.error("[-] Por favor especifique o novo mac, use --help para mais informações.")
-    return options"""
 
 
 def get_arguments():
@@ -33,8 +31,9 @@ def get_arguments():
     parser.add_option("-i", "--infoSO", dest="sistop", help="Checar Sistema Operacional", action="store_true", default=False)
     parser.add_option("-m", "--getMAC", dest="getmac", help="Pegar MAC. Inserir IP/RANGE")
     parser.add_option("-u", "--scanUDP", dest="scanudp", help="Scan UDP das portas 0-65535", action="store_true", default=False)
+    parser.add_option("-x", "--scanXMAS", dest="scanxmas", help="Scan XMAS das portas mais comuns", action="store_true",default=False)
     (options, args) = parser.parse_args()
-    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop and not options.getmac and not options.scanudp:
+    if not options.scanhost and not options.host and not options.rehost and not options.localhost and not options.sistop and not options.getmac and not options.scanudp and not options.scanxmas:
         print("[*] Utilize a flag -h ou --help para mais informações.")
     return options
 
@@ -152,6 +151,66 @@ def udp_scan():
         print("[*] Abortando tarefa.")
 
 
+# XMAS SCAN - COMEÇO
+def is_up(ip):
+    icmp = IP(dst=ip)/ICMP()
+    resp = sr1(icmp, timeout=10)
+    if resp == None:
+        return False
+    else:
+        return True
+
+
+def probe_port(ip, port, result = 1):
+    src_port = RandShort()
+    try:
+        p = IP(dst=ip)/TCP(sport=src_port, dport=port, flags='FPU')
+        resp = sr1(p, timeout=2) # Sending packet
+        if str(type(resp)) == "<type 'NoneType'>":
+            result = 1
+        elif resp.haslayer(TCP):
+            if resp.getlayer(TCP).flags == 0x14:
+                result = 0
+            elif (int(resp.getlayer(ICMP).type)==3 and int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+                result = 2
+    except Exception as e:
+        pass
+    return result
+
+
+def xmas_scan():
+    host = options.host
+    ip = socket.gethostbyname(host)
+    portas_comuns = {21, 22, 23, 25, 53, 69, 80, 88, 109, 110,
+                     123, 137, 138, 139, 143, 156, 161, 389, 443,
+                     445, 500, 546, 547, 587, 660, 995, 993, 2086,
+                     2087, 2082, 2083, 3306, 8443, 10000
+                     }
+    openp = []
+    filterdp = []
+
+    conf.verb = 0
+    if is_up(ip):
+        print("[*] Começando XMAS Scanner em %s" % host)
+        for port in portas_comuns:
+            response = probe_port(ip, port)
+            if response == 1:
+                openp.append(port)
+            elif response == 2:
+                filterdp.append(port)
+        if len(openp) != 0:
+            print("[*] Possíveis portas abertas/filtradas:")
+            print(openp)
+        if len(filterdp) != 0:
+            print("[*] Possíveis portas filtradas:")
+            print(filterdp)
+        if (len(openp) == 0) and (len(filterdp) == 0):
+            print("[*] Nenhuma porta aberta/filtrada foi encontrada")
+    else:
+        print("[*] HOST inalcançável.")
+# XMAS SCAN - FIM
+
+
 options = get_arguments()
 
 
@@ -182,4 +241,9 @@ if __name__ == '__main__':
         if options.scanudp and options.host:
             udp_scan()
         elif options.scanudp and not options.host:
+            print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+
+        if options.scanxmas and options.host:
+            xmas_scan()
+        elif options.scanxmas and not options.host:
             print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
