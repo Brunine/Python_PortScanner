@@ -3,6 +3,7 @@ import scapy
 import optparse
 import re
 import subprocess
+import pyfiglet
 
 def print_machine_info():
     host_name = socket.gethostname()
@@ -124,20 +125,24 @@ def get_system_info():
 
 options = get_arguments()
 
-if options.scanhost and options.host:
-    scan_portas()
-elif options.scanhost and not options.host:
-    print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
 
-if options.rehost and options.host:
-    get_remote_machine_infor()
-elif options.rehost and not options.host:
-    print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+if __name__ == '__main__':
+        ascii_banner = pyfiglet.figlet_format("NINE SCAN")
+        print(ascii_banner)
+        if options.scanhost and options.host:
+                scan_portas()
+        elif options.scanhost and not options.host:
+                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
 
-if options.localhost:
-    scan_localhost()
+        if options.rehost and options.host:
+                get_remote_machine_infor()
+        elif options.rehost and not options.host:
+                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
 
-if options.sistop and options.host:
-    get_system_info()
-elif options.sistop and not options.host:
-    print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
+        if options.localhost:
+                scan_localhost()
+
+        if options.sistop and options.host:
+                get_system_info()
+        elif options.sistop and not options.host:
+                print("[*] Insira o IP ou DNS com o '-h' ou '--host'.")
